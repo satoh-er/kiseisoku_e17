@@ -109,8 +109,6 @@ def make_input_jason(region: int, ua_target: float, eta_ac_target: float, eta_ah
     eta_h_calc_window_dsh = m_h_calc_window / np.sum(window_area_js * heating_azimuthal_coefficient_js * heating_sol_correction_factor_js)
 
     # 透明な部位の日射熱取得率の上限値チェック
-    is_eta_c_window_upper = False
-    is_eta_h_window_upper = False
     eta_c_calc_window = eta_c_calc_window_dsh
     eta_h_calc_window = eta_h_calc_window_dsh
     f_eta_c = eta_c_calc_window_dsh / 0.88
@@ -118,7 +116,6 @@ def make_input_jason(region: int, ua_target: float, eta_ac_target: float, eta_ah
     f_eta = max(f_eta_c, f_eta_h)
     u_calc_window = u_calc_window_dsh
     if f_eta > 1.0:
-        is_eta_window_upper = True
         # 窓の日射熱取得率を補正する
         eta_c_calc_window = eta_c_calc_window_dsh / f_eta
         eta_h_calc_window = eta_h_calc_window_dsh / f_eta
@@ -131,7 +128,13 @@ def make_input_jason(region: int, ua_target: float, eta_ac_target: float, eta_ah
     # 想定するU値を再現する壁体構成の辞書型を作成する
     wall = make_layers_for_exterior_wall(u_calc=u_calc_wall)
     ceil = make_layers_for_ceiling(u_calc=u_calc_ceil)
-    ceil_reverse = reverse_layers_for_ceiling(ceil)
+    ceil_reverse = reverse_layers_for_ceiling(d=ceil)
+    floor = make_layers_for_floor(u_calc=u_calc_floor, is_storage=is_storage)
+    floor_reverse = reverse_layers_for_floor(d=floor)
+    window_c = make_property_for_window(u_calc=u_calc_window, eta_calc=eta_c_calc_window)
+    window_h = make_property_for_window(u_calc=u_calc_window, eta_calc=eta_h_calc_window)
+    door = make_property_for_door(u_calc=u_calc_door)
+
 
 def make_layers_for_exterior_wall(u_calc: float) -> dict:
     """部位の熱貫流率から外壁要素の辞書型を返す

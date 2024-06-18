@@ -248,10 +248,20 @@ def make_layers_for_exterior_wall(
         }
     }
 
-def make_layers_for_ceiling(u_calc: float) -> dict:
+def make_layers_for_ceiling(
+        id: int,
+        connected_room_id: int,
+        area: float,
+        rear_surface_boundary_id: int,
+        u_calc: float
+        ) -> dict:
     """部位の熱貫流率から天井要素の辞書型を返す
 
     Args:
+        id (int): 部位ID
+        connected_room_id (int): 隣接する部屋ID
+        area (float): 面積[m2]
+        rear_surface_boundary_id (int): 隣室側の部位ID
         u_calc (float): 部位の熱貫流率
 
     Returns:
@@ -296,15 +306,17 @@ def make_layers_for_ceiling(u_calc: float) -> dict:
         del layers[1]
     
     return {
+        "id": id,
+        "name": "天井",
+        "sub_name": "天井",
+        "connected_room_id": connected_room_id,
         "boundary_type": "internal",
-        "h_c": 5.0,
+        "area": area,
+        "rear_surface_boundary_id": rear_surface_boundary_id,
         "is_solar_absorbed_inside": True,
         "is_floor": False,
-        "layers": layers,
-        "solar_shading_part": {
-            "existence": False
-        },
-        "outside_heat_transfer_resistance": R_o
+        "h_c": 5.0,
+        "layers": layers
     }
 
 def reverse_layers_for_ceiling(d: dict):
@@ -322,10 +334,21 @@ def reverse_layers_for_ceiling(d: dict):
 
     return d
 
-def make_layers_for_floor(u_calc: float, is_storage: bool) -> dict:
+def make_layers_for_floor(
+        id: int,
+        connected_room_id: int,
+        area: float,
+        rear_surface_boundary_id: int,
+        u_calc: float,
+        is_storage: bool
+        ) -> dict:
     """部位の熱貫流率から床要素の辞書型を返す
 
     Args:
+        id (int): 部位ID
+        connected_room_id (int): 隣接する部屋ID
+        area (float): 面積[m2]
+        rear_surface_boundary_id (int): 隣室側の部位ID
         u_calc (float): 部位の熱貫流率
         is_storage(bool): 蓄熱ありの場合True
 
@@ -384,15 +407,17 @@ def make_layers_for_floor(u_calc: float, is_storage: bool) -> dict:
         del layers[0]
     
     return {
+        "id": id,
+        "name": "床",
+        "sub_name": "床",
+        "connected_room_id": connected_room_id,
         "boundary_type": "internal",
-        "h_c": 0.7,
+        "area": area,
+        "rear_surface_boundary_id": rear_surface_boundary_id,
         "is_solar_absorbed_inside": True,
         "is_floor": True,
-        "layers": layers,
-        "solar_shading_part": {
-            "existence": False
-        },
-        "outside_heat_transfer_resistance": R_o
+        "h_c": 0.7,
+        "layers": layers
     }
 
 def reverse_layers_for_floor(d: dict):
@@ -471,6 +496,10 @@ def make_property_for_door(
     """部位の熱貫流率からドア要素の辞書型を返す
 
     Args:
+        id (int): 部位ID
+        connected_room_id (int): 隣接する部屋ID
+        area (float): 面積[m2]
+        direction (str): 方位
         u_calc (float): 熱貫流率[W/(m2･K)]
 
     Returns:
@@ -502,6 +531,26 @@ def make_property_for_door(
             "existence": False
         }
     }
+
+def make_property_for_roof(
+        id: int,
+        connected_room_id: int,
+        area: float,
+        direction: str,
+        u_calc: float
+        ) -> dict:
+    """_summary_
+
+    Args:
+        id (int): _description_
+        connected_room_id (int): _description_
+        area (float): _description_
+        direction (str): _description_
+        u_calc (float): _description_
+
+    Returns:
+        dict: _description_
+    """
 
 if __name__ == '__main__':
 

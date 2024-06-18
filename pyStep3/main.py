@@ -136,10 +136,22 @@ def make_input_jason(region: int, ua_target: float, eta_ac_target: float, eta_ah
     door = make_property_for_door(u_calc=u_calc_door)
 
 
-def make_layers_for_exterior_wall(u_calc: float) -> dict:
-    """部位の熱貫流率から外壁要素の辞書型を返す
+def make_layers_for_exterior_wall(
+        id: int,
+        connected_room_id: int,
+        area: float,
+        direction: str,
+        u_calc: float
+        ) -> dict:
+    """
+
+        部位の熱貫流率から外壁要素の辞書型を返す
 
     Args:
+        id (int): 部位ID
+        connected_room_id (int): 隣接する部屋ID
+        area (float): 面積[m2]
+        direction (str): 方位
         u_calc (float): 部位の熱貫流率[W/(m2･K)]
 
     Returns:
@@ -214,19 +226,26 @@ def make_layers_for_exterior_wall(u_calc: float) -> dict:
         del layers[2]
 
     return {
+        "id": id,
+        "name": "外壁",
+        "sub_name": "外壁",
+        "connected_room_id": connected_room_id,
         "boundary_type": "external_general_part",
-        "h_c": 2.5,
+        "area": area,
+        "is_sun_striked_outside": True,
+        "temp_dif_coef": 1.0,
         "is_solar_absorbed_inside": True,
         "is_floor": False,
+        "direction": direction,
+        "h_c": 2.5,
+        "outside_emissivity": 0.9,
+        "outside_heat_transfer_resistance": R_o,
+        
+        "outside_solar_absorption": 0.8,
         "layers": layers,
         "solar_shading_part": {
             "existence": False
-        },
-        "is_sun_striked_outside": True,
-        "outside_emissivity": 0.9,
-        "outside_heat_transfer_resistance": R_o,
-        "outside_solar_absorption": 0.8,
-        "temp_dif_coef": 1.0
+        }
     }
 
 def make_layers_for_ceiling(u_calc: float) -> dict:
@@ -392,12 +411,25 @@ def reverse_layers_for_floor(d: dict):
 
     return d
 
-def make_property_for_window(u_calc: float, eta_calc: float) -> dict:
+def make_property_for_window(
+        id: int,
+        connected_room_id: int,
+        area: float,
+        direction: str,
+        u_calc: float,
+        eta_calc: float,
+        solar_shading_part: dict
+        ) -> dict:
     """部位の熱貫流率、日射熱取得率から窓要素の辞書型を返す
 
     Args:
+        id (int): 部位ID
+        connected_room_id (int): 隣接する部屋ID
+        area (float): 面積[m2]
+        direction (str): 方位
         u_calc (float): 熱貫流率[W/(m2･K)]
         eta_calc (float): 日射熱取得率[－]
+        solar_shading_part (dict): 日射遮蔽部位の辞書型
 
     Returns:
         dict: _description_
@@ -407,11 +439,18 @@ def make_property_for_window(u_calc: float, eta_calc: float) -> dict:
     R_o = 0.04
 
     return {
+        "id": id,
+        "name": "窓",
+        "sub_name": "窓",
+        "connected_room_id": connected_room_id,
         "boundary_type": "external_transparent_part",
-        "h_c": 2.5,
+        "area": area,
+        "is_sun_striked_outside": True,
+        "temp_dif_coef": 1.0,
         "is_solar_absorbed_inside": True,
         "is_floor": False,
-        "is_sun_striked_outside": True,
+        "direction": direction,
+        "h_c": 2.5,
         "outside_emissivity": 0.9,
         "outside_heat_transfer_resistance": R_o,
         "u_value": u_calc,
@@ -419,10 +458,16 @@ def make_property_for_window(u_calc: float, eta_calc: float) -> dict:
         "eta_value": eta_calc,
         "incident_angle_characteristics": "multiple",
         "glass_area_ratio": 1.0,
-        "temp_dif_coef": 1.0
+        "solar_shading_part": solar_shading_part
     }
 
-def make_property_for_door(u_calc: float) -> dict:
+def make_property_for_door(
+        id: int,
+        connected_room_id: int,
+        area: float,
+        direction: str,
+        u_calc: float
+        ) -> dict:
     """部位の熱貫流率からドア要素の辞書型を返す
 
     Args:
@@ -436,20 +481,26 @@ def make_property_for_door(u_calc: float) -> dict:
     R_o = 0.04
 
     return {
+        "id": id,
+        "name": "ドア",
+        "sub_name": "ドア",
+        "connected_room_id": connected_room_id,
         "boundary_type": "external_opaque_part",
-        "h_c": 2.5,
+        "area": area,
+        "is_sun_striked_outside": True,
+        "temp_dif_coef": 1.0,
         "is_solar_absorbed_inside": True,
         "is_floor": False,
-        "solar_shading_part": {
-            "existence": False
-        },
-        "is_sun_striked_outside": True,
+        "direction": direction,
+        "h_c": 2.5,
         "outside_emissivity": 0.9,
         "outside_heat_transfer_resistance": R_o,
         "u_value": u_calc,
         "inside_heat_transfer_resistance": R_i,
         "outside_solar_absorption": 0.8,
-        "temp_dif_coef": 1.0
+        "solar_shading_part": {
+            "existence": False
+        }
     }
 
 if __name__ == '__main__':

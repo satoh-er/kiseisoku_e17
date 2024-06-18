@@ -127,10 +127,10 @@ def make_input_jason(region: int, ua_target: float, eta_ac_target: float, eta_ah
 
     # 想定するU値を再現する壁体構成の辞書型を作成する
     wall = make_layers_for_exterior_wall(u_calc=u_calc_wall)
-    ceil = make_layers_for_ceiling(u_calc=u_calc_ceil)
-    ceil_reverse = reverse_layers_for_ceiling(d=ceil)
-    floor = make_layers_for_floor(u_calc=u_calc_floor, is_storage=is_storage)
-    floor_reverse = reverse_layers_for_floor(d=floor)
+    ceil = make_layers_for_skin_ceiling(u_calc=u_calc_ceil)
+    ceil_reverse = reverse_layers_for_skin_ceiling(d=ceil)
+    floor = make_layers_for_skin_floor(u_calc=u_calc_floor, is_storage=is_storage)
+    floor_reverse = reverse_layers_for_skin_floor(d=floor)
     window_c = make_property_for_window(u_calc=u_calc_window, eta_calc=eta_c_calc_window)
     window_h = make_property_for_window(u_calc=u_calc_window, eta_calc=eta_h_calc_window)
     door = make_property_for_door(u_calc=u_calc_door)
@@ -248,7 +248,7 @@ def make_layers_for_exterior_wall(
         }
     }
 
-def make_layers_for_ceiling(
+def make_layers_for_skin_ceiling(
         id: int,
         connected_room_id: int,
         area: float,
@@ -319,22 +319,27 @@ def make_layers_for_ceiling(
         "layers": layers
     }
 
-def reverse_layers_for_ceiling(d: dict):
+def reverse_layers_for_skin_ceiling(d: dict):
     """天井のlayersの層の順序を入れ替える（隣室側の定義用）
 
     Args:
         d (dict): _description_
     """
 
+    id = d['id']
+    rear_surface_boundary_id = d['rear_surface_boundary_id']
     layers = d['layers']
     del d['layers']
     layers.reverse()
     d['layers'] = layers
     d['is_floor'] = True
+    d["id"] = rear_surface_boundary_id
+    d["rear_surface_boundary_id"] = id
+    d['h_c'] = 5.0
 
     return d
 
-def make_layers_for_floor(
+def make_layers_for_skin_floor(
         id: int,
         connected_room_id: int,
         area: float,
@@ -420,19 +425,23 @@ def make_layers_for_floor(
         "layers": layers
     }
 
-def reverse_layers_for_floor(d: dict):
+def reverse_layers_for_skin_floor(d: dict):
     """床のlayersの層の順序を入れ替える（隣室側の定義用）
 
     Args:
         d (dict): _description_
     """
 
+    id = d['id']
+    rear_surface_boundary_id = d['rear_surface_boundary_id']
     layers = d['layers']
     del d['layers']
     layers.reverse()
     d['layers'] = layers
     d['is_floor'] = False
-    d['h_c'] = 5.0
+    d["id"] = rear_surface_boundary_id
+    d["rear_surface_boundary_id"] = id
+    d['h_c'] = 0.7
 
     return d
 
@@ -535,22 +544,44 @@ def make_property_for_door(
 def make_property_for_roof(
         id: int,
         connected_room_id: int,
-        area: float,
-        direction: str,
-        u_calc: float
+        area: float
         ) -> dict:
     """_summary_
 
     Args:
-        id (int): _description_
-        connected_room_id (int): _description_
-        area (float): _description_
-        direction (str): _description_
-        u_calc (float): _description_
+        id (int): 部位ID
+        connected_room_id (int): 隣接する部屋ID
+        area (float): 面積[m2]
 
     Returns:
         dict: _description_
     """
+
+    R_i = 0.09
+    R_o = 0.04
+
+    return {
+        "id": id,
+        "name": "屋根",
+        "sub_name": "屋根",
+        "connected_room_id": connected_room_id,
+        "boundary_type": "external_opaque_part",
+        "area": area,
+        "is_sun_striked_outside": True,
+        "temp_dif_coef": 1.0,
+        "is_solar_absorbed_inside": True,
+        "is_floor": False,
+        "direction": "top",
+        "h_c": 5.0,
+        "outside_emissivity": 0.9,
+        "outside_heat_transfer_resistance": R_o,
+        "u_value": 4.51,
+        "inside_heat_transfer_resistance": R_i,
+        "outside_solar_absorption": 0.8,
+        "solar_shading_part": {
+            "existence": False
+        }
+    }
 
 if __name__ == '__main__':
 

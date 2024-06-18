@@ -583,6 +583,39 @@ def make_property_for_roof(
         }
     }
 
+def make_property_for_ground(
+        id: int,
+        connected_room_id: int,
+        area: float
+        ) -> dict:
+    """土間床中央部の辞書型を返す
+
+    Args:
+        id (int): 部位ID
+        connected_room_id (int): 隣接する部屋ID
+        area (float): 面積[m2]
+
+    Returns:
+        dict: _description_
+    """
+
+    return {
+        "id": id,
+        "name": "土間",
+        "sub_name": "土間",
+        "connected_room_id": connected_room_id,
+        "boundary_type": "ground",
+        "area": area,
+        "is_solar_absorbed_inside": True,
+        "is_floor": True,
+        "h_c": 0.7,
+        "layer": {
+          "name": "コンクリート",
+          "thermal_resistance": 0.075,
+          "thermal_capacity": 227.5512
+        }
+    }
+
 if __name__ == '__main__':
 
     region = 6

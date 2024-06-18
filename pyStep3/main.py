@@ -592,8 +592,15 @@ if __name__ == '__main__':
     a_env = 307.51
     is_storage = False
 
-    door = make_property_for_door(u_calc=0.2)
-    print(door)
+    # door = make_property_for_door(id=0, connected_room_id=0, area=5.0, direction='s', u_calc=0.2)
+    # print(door)
+    # window = make_property_for_window(id=0, connected_room_id=0, area=5.0, direction='s', u_calc=0.2, eta_calc=0.8, solar_shading_part={"existence": False})
+    # print(window)
+
+    skin_ceil = make_layers_for_skin_ceiling(id=0, connected_room_id=0, area=5.0, rear_surface_boundary_id=1, u_calc=0.2)
+    print(skin_ceil)
+    skin_ceil_reverse = reverse_layers_for_skin_ceiling(d=skin_ceil)
+    print(skin_ceil_reverse)
 
     # make_input_jason(
     #     region=region,

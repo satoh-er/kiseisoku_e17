@@ -126,17 +126,60 @@ def make_input_jason(region: int, ua_target: float, eta_ac_target: float, eta_ah
         u_calc_window = u_calc_window_dsh / f_eta
 
     # 想定するU値を再現する壁体構成の辞書型を作成する
-    wall = make_layers_for_exterior_wall(u_calc=u_calc_wall)
-    ceil = make_layers_for_skin_ceiling(u_calc=u_calc_ceil)
-    ceil_reverse = reverse_layers_for_skin_ceiling(d=ceil)
-    floor = make_layers_for_skin_floor(u_calc=u_calc_floor, is_storage=is_storage)
-    floor_reverse = reverse_layers_for_skin_floor(d=floor)
-    window_c = make_property_for_window(u_calc=u_calc_window, eta_calc=eta_c_calc_window)
-    window_h = make_property_for_window(u_calc=u_calc_window, eta_calc=eta_h_calc_window)
-    door = make_property_for_door(u_calc=u_calc_door)
+    wall = make_dictionary_for_exterior_wall(u_calc=u_calc_wall)
+    ceil = make_dictionary_for_skin_ceiling(u_calc=u_calc_ceil)
+    ceil_reverse = reverse_dictionary_for_skin_ceiling(d=ceil)
+    floor = make_dictionary_for_skin_floor(u_calc=u_calc_floor, is_storage=is_storage)
+    floor_reverse = reverse_dictionary_for_skin_floor(d=floor)
+    window_c = make_dictionary_for_window(u_calc=u_calc_window, eta_calc=eta_c_calc_window)
+    window_h = make_dictionary_for_window(u_calc=u_calc_window, eta_calc=eta_h_calc_window)
+    door = make_dictionary_for_door(u_calc=u_calc_door)
 
+def make_common() -> dict:
+    """common部の辞書型を返す
 
-def make_layers_for_exterior_wall(
+    Returns:
+        dict: _description_
+    """
+
+    return "common": {
+        "ac_method": "air_temperature",
+        "ac_config": [
+            {
+                "mode": 1,
+                "lower": 20,
+                "upper": 27
+            },
+            {
+                "mode": 2,
+                "lower": 0,
+                "upper": 28
+            }
+        ]
+    }
+
+def make_building() -> dict:
+    """building部の辞書型を返す
+
+    Returns:
+        dict: _description_
+    """
+
+    return "building": {
+        "infiltration": {
+            "method": "balance_residential",
+            "c_value_estimate": "specify",
+            "story": 2,
+            "c_value": 0.0,
+            "inside_pressure": "negative"
+            }
+        }
+
+def make_room(
+        id: int,
+)
+
+def make_dictionary_for_exterior_wall(
         id: int,
         connected_room_id: int,
         area: float,
@@ -192,8 +235,8 @@ def make_layers_for_exterior_wall(
     # 断熱材の熱容量の計算
     hcap_3 = crho_3 * d_3
 
-    # layers要素の作成
-    layers = [
+    # dictionary要素の作成
+    dictionary = [
         {
             "name": "石膏ボード10mm",
             "thermal_resistance": R_1,
@@ -223,7 +266,7 @@ def make_layers_for_exterior_wall(
     
     # もし、断熱なしの結果になったらlayerを削除
     if R_3 == 0.0:
-        del layers[2]
+        del dictionary[2]
 
     return {
         "id": id,
@@ -242,13 +285,13 @@ def make_layers_for_exterior_wall(
         "outside_heat_transfer_resistance": R_o,
         
         "outside_solar_absorption": 0.8,
-        "layers": layers,
+        "dictionary": dictionary,
         "solar_shading_part": {
             "existence": False
         }
     }
 
-def make_layers_for_skin_ceiling(
+def make_dictionary_for_skin_ceiling(
         id: int,
         connected_room_id: int,
         area: float,
@@ -287,8 +330,8 @@ def make_layers_for_skin_ceiling(
     # 断熱材の熱容量の計算
     hcap_2 = crho_2 * d_2
 
-    # layers要素の作成
-    layers = [
+    # dictionary要素の作成
+    dictionary = [
         {
             "name": "石膏ボード10mm",
             "thermal_resistance": R_1,
@@ -303,7 +346,7 @@ def make_layers_for_skin_ceiling(
     
     # もし、断熱なしの結果になったらlayerを削除
     if R_2 == 0.0:
-        del layers[1]
+        del dictionary[1]
     
     return {
         "id": id,
@@ -316,30 +359,35 @@ def make_layers_for_skin_ceiling(
         "is_solar_absorbed_inside": True,
         "is_floor": False,
         "h_c": 5.0,
-        "layers": layers
+        "dictionary": dictionary
     }
 
-def reverse_layers_for_skin_ceiling(d: dict):
-    """天井のlayersの層の順序を入れ替える（隣室側の定義用）
+def reverse_dictionary_for_skin_ceiling(
+        connected_room_id: int,
+        d: dict
+        ) -> dict:
+    """天井のdictionaryの層の順序を入れ替える（隣室側の定義用）
 
     Args:
+        connected_room_id (int): 隣接する部屋ID
         d (dict): _description_
     """
 
     id = d['id']
     rear_surface_boundary_id = d['rear_surface_boundary_id']
-    layers = d['layers']
-    del d['layers']
-    layers.reverse()
-    d['layers'] = layers
+    dictionary = d['dictionary']
+    del d['dictionary']
+    dictionary.reverse()
+    d['dictionary'] = dictionary
     d['is_floor'] = True
     d["id"] = rear_surface_boundary_id
     d["rear_surface_boundary_id"] = id
     d['h_c'] = 5.0
+    d['connected_room_id'] = connected_room_id
 
     return d
 
-def make_layers_for_skin_floor(
+def make_dictionary_for_skin_floor(
         id: int,
         connected_room_id: int,
         area: float,
@@ -386,8 +434,8 @@ def make_layers_for_skin_floor(
     # 断熱材の熱容量の計算
     hcap_3 = crho_3 * d_3
 
-    # layers要素の作成
-    layers = [
+    # dictionary要素の作成
+    dictionary = [
         {
             "name": "コンクリート90mm",
             "thermal_resistance": R_1,
@@ -407,9 +455,9 @@ def make_layers_for_skin_floor(
     
     # もし、断熱なしの結果になったらlayerを削除
     if R_3 == 0.0:
-        del layers[2]
+        del dictionary[2]
     if R_1 == 0.0:
-        del layers[0]
+        del dictionary[0]
     
     return {
         "id": id,
@@ -422,30 +470,35 @@ def make_layers_for_skin_floor(
         "is_solar_absorbed_inside": True,
         "is_floor": True,
         "h_c": 0.7,
-        "layers": layers
+        "dictionary": dictionary
     }
 
-def reverse_layers_for_skin_floor(d: dict):
-    """床のlayersの層の順序を入れ替える（隣室側の定義用）
+def reverse_dictionary_for_skin_floor(
+        connected_room_id: int,
+        d: dict
+        ) -> dict:
+    """床のdictionaryの層の順序を入れ替える（隣室側の定義用）
 
     Args:
+        connected_room_id (int): 隣接する部屋ID
         d (dict): _description_
     """
 
     id = d['id']
     rear_surface_boundary_id = d['rear_surface_boundary_id']
-    layers = d['layers']
-    del d['layers']
-    layers.reverse()
-    d['layers'] = layers
+    dictionary = d['dictionary']
+    del d['dictionary']
+    dictionary.reverse()
+    d['dictionary'] = dictionary
     d['is_floor'] = False
     d["id"] = rear_surface_boundary_id
     d["rear_surface_boundary_id"] = id
     d['h_c'] = 0.7
+    d['connected_room_id'] = connected_room_id
 
     return d
 
-def make_property_for_window(
+def make_dictionary_for_window(
         id: int,
         connected_room_id: int,
         area: float,
@@ -495,7 +548,7 @@ def make_property_for_window(
         "solar_shading_part": solar_shading_part
     }
 
-def make_property_for_door(
+def make_dictionary_for_door(
         id: int,
         connected_room_id: int,
         area: float,
@@ -541,7 +594,7 @@ def make_property_for_door(
         }
     }
 
-def make_property_for_roof(
+def make_dictionary_for_roof(
         id: int,
         connected_room_id: int,
         area: float
@@ -583,7 +636,7 @@ def make_property_for_roof(
         }
     }
 
-def make_property_for_ground(
+def make_dictionary_for_ground(
         id: int,
         connected_room_id: int,
         area: float
@@ -609,12 +662,212 @@ def make_property_for_ground(
         "is_solar_absorbed_inside": True,
         "is_floor": True,
         "h_c": 0.7,
-        "layer": {
-          "name": "コンクリート",
-          "thermal_resistance": 0.075,
-          "thermal_capacity": 227.5512
-        }
+        "layer": [
+            {
+            "name": "コンクリート",
+            "thermal_resistance": 0.075,
+            "thermal_capacity": 227.5512
+            }
+        ]
     }
+
+def make_dictionary_for_partition_wall(
+        id: int,
+        connected_room_id: int,
+        area: float,
+        rear_surface_boundary_id: int
+        ) -> dict:
+    """間仕切壁の辞書型を返す
+
+    Args:
+        id (int): 部位ID
+        connected_room_id (int): 隣接する部屋ID
+        area (float): 面積[m2]
+        rear_surface_boundary_id (int): 隣室側の部位ID
+
+    Returns:
+        dict: _description_
+    """
+
+    return {
+        "id": id,
+        "name": "間仕切壁",
+        "sub_name": "間仕切壁",
+        "connected_room_id": connected_room_id,
+        "boundary_type": "internal",
+        "area": area,
+        "rear_surface_boundary_id": rear_surface_boundary_id,
+        "is_solar_absorbed_inside": True,
+        "is_floor": False,
+        "h_c": 5.0,
+        "dictionary": [
+            {
+                "name": "石膏ボード",
+                "thermal_resistance": 0.0125 / 0.22,
+                "thermal_capacity": 830.0 * 0.0125
+            },
+            {
+                "name": "空気層",
+                "thermal_resistance": 0.07,
+                "thermal_capacity": 0.0
+            },
+            {
+                "name": "石膏ボード",
+                "thermal_resistance": 0.0125 / 0.22,
+                "thermal_capacity": 830.0 * 0.0125
+            }
+        ]
+    }
+
+def reverse_layer_for_partition_wall(
+        connected_room_id: int,
+        d: dict
+        ) -> dict:
+    """間仕切壁のdictionaryの層の順序を入れ替える（隣室側の定義用）
+
+    Args:
+        connected_room_id (int): 隣接する部屋ID
+        d (dict): _description_
+    """
+
+    id = d['id']
+    rear_surface_boundary_id = d['rear_surface_boundary_id']
+    dictionary = d['dictionary']
+    del d['dictionary']
+    dictionary.reverse()
+    d['dictionary'] = dictionary
+    d["id"] = rear_surface_boundary_id
+    d["rear_surface_boundary_id"] = id
+    d['connected_room_id'] = connected_room_id
+
+    return d
+
+def make_dictionary_for_kaima_floor(
+        id: int,
+        connected_room_id: int,
+        area: float,
+        rear_surface_boundary_id: int
+        ) -> dict:
+    """_summary_
+
+    Args:
+        id (int): 部位ID
+        connected_room_id (int): 隣接する部屋ID
+        area (float): 面積[m2]
+        rear_surface_boundary_id (int): 隣室側の部位ID
+
+    Returns:
+        dict: _description_
+    """
+
+    return {
+        "id": id,
+        "name": "階間床",
+        "sub_name": "階間床",
+        "connected_room_id": connected_room_id,
+        "boundary_type": "internal",
+        "area": area,
+        "rear_surface_boundary_id": rear_surface_boundary_id,
+        "is_solar_absorbed_inside": True,
+        "is_floor": True,
+        "h_c": 5.0,
+        "dictionary": [
+            {
+                "name": "石膏ボード",
+                "thermal_resistance": 0.0125 / 0.22,
+                "thermal_capacity": 0.0125 * 830.0
+            }
+        ]
+    }
+
+def reverse_layer_for_kaima_floor(
+        connected_room_id: int,
+        d: dict
+        ) -> dict:
+    """階間床のdictionaryの層の順序を入れ替える（隣室側の定義用）
+
+    Args:
+        connected_room_id (int): 隣接する部屋ID
+        d (dict): _description_
+    """
+
+    id = d['id']
+    rear_surface_boundary_id = d['rear_surface_boundary_id']
+    dictionary = d['dictionary']
+    del d['dictionary']
+    dictionary.reverse()
+    d['dictionary'] = dictionary
+    d["id"] = rear_surface_boundary_id
+    d["rear_surface_boundary_id"] = id
+    d['connected_room_id'] = connected_room_id
+
+    return d
+
+def make_dictionary_2nd_floor(
+        id: int,
+        connected_room_id: int,
+        area: float,
+        rear_surface_boundary_id: int,
+        is_storage: bool
+        ) -> dict:
+    """2階の辞書型を返す
+    
+    Args:
+        id (int): 部位ID
+        connected_room_id (int): 隣接する部屋ID
+        area (float): 面積[m2]
+        rear_surface_boundary_id (int): 隣室側の部位ID
+        is_storage (bool): 蓄熱ありの場合True
+    """
+
+    return {
+        "id": id,
+        "name": "2階床",
+        "sub_name": "2階床",
+        "connected_room_id": connected_room_id,
+        "boundary_type": "internal",
+        "area": area,
+        "rear_surface_boundary_id": rear_surface_boundary_id,
+        "is_solar_absorbed_inside": True,
+        "is_floor": True,
+        "h_c": 0.7,
+        "dictionary": [
+            {
+                "name": "コンクリート",
+                "thermal_resistance": 0.09 / 1.6,
+                "thermal_capacity": 0.09 * 2000.0
+            },
+            {
+                "name": "合板",
+                "thermal_resistance": 0.012 / 0.16,
+                "thermal_capacity": 0.012 * 720.0
+            }
+        ]
+    }
+
+def reverse_layer_for_2nd_floor(
+        connected_room_id: int,
+        d: dict
+        ) -> dict:
+    """2階のdictionaryの層の順序を入れ替える（隣室側の定義用）
+
+    Args:
+        connected_room_id (int): 隣接する部屋ID
+        d (dict): _description_
+    """
+
+    id = d['id']
+    rear_surface_boundary_id = d['rear_surface_boundary_id']
+    dictionary = d['dictionary']
+    del d['dictionary']
+    dictionary.reverse()
+    d['dictionary'] = dictionary
+    d["id"] = rear_surface_boundary_id
+    d["rear_surface_boundary_id"] = id
+    d['connected_room_id'] = connected_room_id
+
+    return d
+
 
 if __name__ == '__main__':
 
@@ -625,15 +878,20 @@ if __name__ == '__main__':
     a_env = 307.51
     is_storage = False
 
-    # door = make_property_for_door(id=0, connected_room_id=0, area=5.0, direction='s', u_calc=0.2)
+    # door = make_dictionary_for_door(id=0, connected_room_id=0, area=5.0, direction='s', u_calc=0.2)
     # print(door)
-    # window = make_property_for_window(id=0, connected_room_id=0, area=5.0, direction='s', u_calc=0.2, eta_calc=0.8, solar_shading_part={"existence": False})
+    # window = make_dictionary_for_window(id=0, connected_room_id=0, area=5.0, direction='s', u_calc=0.2, eta_calc=0.8, solar_shading_part={"existence": False})
     # print(window)
 
-    skin_ceil = make_layers_for_skin_ceiling(id=0, connected_room_id=0, area=5.0, rear_surface_boundary_id=1, u_calc=0.2)
-    print(skin_ceil)
-    skin_ceil_reverse = reverse_layers_for_skin_ceiling(d=skin_ceil)
-    print(skin_ceil_reverse)
+    # skin_ceil = make_dictionary_for_skin_ceiling(id=0, connected_room_id=0, area=5.0, rear_surface_boundary_id=1, u_calc=0.2)
+    # print(skin_ceil)
+    # skin_ceil_reverse = reverse_dictionary_for_skin_ceiling(d=skin_ceil)
+    # print(skin_ceil_reverse)
+
+    iwall = make_dictionary_for_partition_wall(id=0, connected_room_id=0, area=5.0, rear_surface_boundary_id=1)
+    print(iwall)
+    iwall_reverse = reverse_layer_for_partition_wall(connected_room_id=1, d=iwall)
+    print(iwall_reverse)
 
     # make_input_jason(
     #     region=region,

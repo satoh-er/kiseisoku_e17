@@ -19,7 +19,6 @@ def make_input_json(region: int, ua_target: float, eta_ac_target: float, eta_ah_
     
     is_cold_region = region <= 3
 
-    df_ac = pd.read_excel('azimuth_coefficient.xlsx')
     df_info = pd.read_excel('info_of_building_part.xlsx')
 
     a_env_jiritsu = df_info['部位面積（開口部面積含む）'].sum()
@@ -36,10 +35,8 @@ def make_input_json(region: int, ua_target: float, eta_ac_target: float, eta_ah_
 
     # 方位係数の取得
     direction_js = df_info['方位'].to_numpy()
-    cooling_azimuthal_coefficient_js \
-        = np.array([df_ac[(df_ac['期間'] == '冷房') & (df_ac['方位'] == direction)][region].values[0] for direction in direction_js])
-    heating_azimuthal_coefficient_js \
-        = np.array([df_ac[(df_ac['期間'] == '暖房') & (df_ac['方位'] == direction)][region].values[0] for direction in direction_js])
+    (cooling_azimuthal_coefficient_js, heating_azimuthal_coefficient_js) \
+        = get_azimuth_coefficient(region=region, direction_js=direction_js)
 
     # 仕様基準における外壁、天井、床、窓・ドアの熱貫流率
     if is_cold_region:
@@ -251,6 +248,50 @@ def make_input_json(region: int, ua_target: float, eta_ac_target: float, eta_ah_
             }
         }
     }
+
+def get_azimuth_coefficient(region: int, direction_js: np.ndarray) -> (np.ndarray, np.ndarray):
+    """方位係数を取得する
+
+    Args:
+        region (int): 地域区分
+        direction (str): 方位
+
+    Returns:
+        float: 方位係数
+    """
+    
+    dic_ac = {
+        "暖房": {  
+            "上面": [1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, None],
+            "北": [0.260, 0.263, 0.284, 0.256, 0.238, 0.261, 0.227, None],
+            "北東": [0.333, 0.341, 0.348, 0.330, 0.310, 0.325, 0.281, None],
+            "東": [0.564, 0.554, 0.540, 0.531, 0.568, 0.579, 0.543, None],
+            "南東": [0.823, 0.766, 0.751, 0.724, 0.846, 0.833, 0.843, None],
+            "南": [0.935, 0.856, 0.851, 0.815, 0.983, 0.936, 1.023, None],
+            "南西": [0.790, 0.753, 0.750, 0.723, 0.815, 0.763, 0.848, None],
+            "西": [0.535, 0.544, 0.542, 0.527, 0.538, 0.523, 0.548, None],
+            "北西": [0.325, 0.341, 0.351, 0.326, 0.297, 0.317, 0.284, None],
+            "下面": [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, None]
+        },
+        "冷房": {
+            "上面": [1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000, 1.000],
+            "北": [0.329, 0.341, 0.335, 0.322, 0.373, 0.341, 0.307, 0.325],
+            "北東": [0.430, 0.412, 0.390, 0.426, 0.437, 0.431, 0.415, 0.414],
+            "東": [0.545, 0.503, 0.468, 0.518, 0.500, 0.512, 0.509, 0.515],
+            "南東": [0.560, 0.527, 0.487, 0.508, 0.500, 0.498, 0.490, 0.528],
+            "南": [0.502, 0.507, 0.476, 0.437, 0.472, 0.434, 0.412, 0.480],
+            "南西": [0.526, 0.548, 0.550, 0.481, 0.520, 0.491, 0.479, 0.517],
+            "西": [0.508, 0.529, 0.553, 0.481, 0.518, 0.504, 0.495, 0.505],
+            "北西": [0.411, 0.428, 0.447, 0.401, 0.442, 0.427, 0.406, 0.411],
+            "下面": [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000]
+        }
+    } 
+
+    cooling_azimuthal_coefficient_js = np.array([dic_ac['冷房'][direction][region-1] for direction in direction_js])
+    heating_azimuthal_coefficient_js = np.array([dic_ac['暖房'][direction][region-1] for direction in direction_js])
+
+    return (cooling_azimuthal_coefficient_js, heating_azimuthal_coefficient_js)
+
 
 def make_common(region: int) -> dict:
     """common部の辞書型を返す

@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import copy
+import os
 import json
 
 def make_input_json(region: int, ua_target: float, eta_ac_target: float, eta_ah_target: float, a_env: float, is_storage: bool, operation_mode: str):
@@ -141,9 +142,13 @@ def make_input_json(region: int, ua_target: float, eta_ac_target: float, eta_ah_
     # スケジュール名
     schedule_name = np.array(['mor_', 'main_bed_', 'child_1_', 'child_2_', 'nor_', 'zero', 'zero', 'zero'], dtype=object) \
             + np.array([operation_mode] * 5 + [''] * 3, dtype=object)
+    schedule_json = []
+    for name in schedule_name:
+        with open('schedule/' + name + '.json') as f:
+            schedule_json.append(json.load(f))
     # 集約した部屋間の熱容量（家具の熱容量として計上）
     internal_thermal_capacity = np.array([113295.0, 0.001, 0.001, 0.001, 1237844.0, 0.001, 0.001, 0.001])
-    room = [make_room(i, room_name[i], floor_area[i], volume[i], internal_thermal_capacity[i], schedule_name[i]) for i in range(len(room_name))]
+    room = [make_room(i, room_name[i], floor_area[i], volume[i], internal_thermal_capacity[i], schedule_json[i]) for i in range(len(room_name))]
     # 外壁
     connected_room_id = np.array([0, 0, 0, 3, 2, 3, 1, 1, 4, 4, 4, 4, 5, 5, 5, 5], dtype='int')
     if is_cold_region:
@@ -299,7 +304,7 @@ def make_room(
         floor_area: float,
         volume: float,
         heatcap_of_internal: float,
-        schedule_name: str
+        schedule_json: dict
     ) -> dict:
     """room部の辞書型を返す
 
@@ -309,7 +314,7 @@ def make_room(
         floor_area (float): 床面積[m2]
         volume (float): 室容積[m3]
         heatcap_of_internal (float): 室内の熱容量[J/K]
-        schedule_name (str): スケジュール名
+        schedule_json (str): スケジュール名
 
     Returns:
         dict: _description_
@@ -331,9 +336,7 @@ def make_room(
             "moisture_capacity": 0.0,
             "moisture_cond": 1.0
         },
-        "schedule": {
-            "name": schedule_name
-        }
+        "schedule": schedule_json
     }
 
 def make_dictionary_for_exterior_wall(
@@ -1254,6 +1257,7 @@ class NumpyEncoder(json.JSONEncoder):
         return super(NumpyEncoder, self).encode(obj)
 
 if __name__ == '__main__':
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     region = 1
     ua_target = 0.5
